@@ -1,0 +1,1616 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Hive - Board Game</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    body { margin: 0; overflow: hidden; }
+    * { -webkit-tap-highlight-color: transparent; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+
+    // Lucide icons as simple SVG components
+    const Icon = ({ d, className = "w-5 h-5" }) => (
+      <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d={d} />
+      </svg>
+    );
+
+    const Hexagon = ({ className }) => (
+      <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+      </svg>
+    );
+
+    const Users = ({ className }) => (
+      <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+        <circle cx="9" cy="7" r="4" />
+        <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+      </svg>
+    );
+
+    const RotateCcw = ({ className }) => (
+      <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+        <path d="M3 3v5h5" />
+      </svg>
+    );
+
+    const Trophy = ({ className }) => (
+      <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" />
+        <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
+        <path d="M4 22h16" />
+        <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" />
+        <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" />
+        <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" />
+      </svg>
+    );
+
+    const Copy = ({ className }) => (
+      <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
+        <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
+      </svg>
+    );
+
+    const Check = ({ className }) => (
+      <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M20 6 9 17l-5-5" />
+      </svg>
+    );
+
+    const Clock = ({ className }) => (
+      <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <circle cx="12" cy="12" r="10" />
+        <path d="M12 6v6l4 2" />
+      </svg>
+    );
+
+    const ChevronUp = ({ className }) => (
+      <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="m18 15-6-6-6 6" />
+      </svg>
+    );
+
+    const ChevronDown = ({ className }) => (
+      <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="m6 9 6 6 6-6" />
+      </svg>
+    );
+
+    const Menu = ({ className }) => (
+      <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <line x1="4" x2="20" y1="12" y2="12" />
+        <line x1="4" x2="20" y1="6" y2="6" />
+        <line x1="4" x2="20" y1="18" y2="18" />
+      </svg>
+    );
+
+    const X = ({ className }) => (
+      <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M18 6 6 18" />
+        <path d="m6 6 12 12" />
+      </svg>
+    );
+
+    const ZoomIn = ({ className }) => (
+      <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <circle cx="11" cy="11" r="8" />
+        <line x1="21" x2="16.65" y1="21" y2="16.65" />
+        <line x1="11" x2="11" y1="8" y2="14" />
+        <line x1="8" x2="14" y1="11" y2="11" />
+      </svg>
+    );
+
+    const ZoomOut = ({ className }) => (
+      <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <circle cx="11" cy="11" r="8" />
+        <line x1="21" x2="16.65" y1="21" y2="16.65" />
+        <line x1="8" x2="14" y1="11" y2="11" />
+      </svg>
+    );
+
+    const HelpCircle = ({ className }) => (
+      <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <circle cx="12" cy="12" r="10" />
+        <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+        <path d="M12 17h.01" />
+      </svg>
+    );
+
+    const Wifi = ({ className }) => (
+      <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M5 13a10 10 0 0 1 14 0" />
+        <path d="M8.5 16.5a5 5 0 0 1 7 0" />
+        <path d="M2 8.82a15 15 0 0 1 20 0" />
+        <line x1="12" x2="12.01" y1="20" y2="20" />
+      </svg>
+    );
+
+    const Bell = ({ className }) => (
+      <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
+        <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
+      </svg>
+    );
+
+const PIECES = {
+  queen: { name: 'Queen Bee', count: 1 },
+  beetle: { name: 'Beetle', count: 2 },
+  grasshopper: { name: 'Grasshopper', count: 3 },
+  spider: { name: 'Spider', count: 2 },
+  ant: { name: 'Ant', count: 3 },
+  mosquito: { name: 'Mosquito', count: 1 },
+  ladybug: { name: 'Ladybug', count: 1 },
+  pillbug: { name: 'Pillbug', count: 1 }
+};
+
+const generateGameId = () => {
+  return Math.random().toString(36).substring(2, 8).toUpperCase();
+};
+
+// Simple localStorage-based storage for demo
+const storage = {
+  async get(key) {
+    const value = localStorage.getItem(key);
+    return value ? { value } : null;
+  },
+  async set(key, value) {
+    localStorage.setItem(key, value);
+    return { key, value };
+  }
+};
+
+function HiveGame() {
+  const [gameState, setGameState] = useState({
+    board: [],
+    currentPlayer: 'white',
+    turn: 1,
+    whitePieces: { ...PIECES },
+    blackPieces: { ...PIECES },
+    selectedPiece: null,
+    selectedBoardPiece: null,
+    whiteQueenPlaced: false,
+    blackQueenPlaced: false,
+    winner: null,
+    gameId: null,
+    lastMoveTime: null
+  });
+
+  const [validMoves, setValidMoves] = useState([]);
+  const [gameMode, setGameMode] = useState(null);
+  const [showMenu, setShowMenu] = useState(true);
+  const [hoveredStack, setHoveredStack] = useState(null);
+  
+  const [playerColor, setPlayerColor] = useState(null);
+  const [playerName, setPlayerName] = useState('');
+  const [opponentName, setOpponentName] = useState('');
+  const [opponentContact, setOpponentContact] = useState('');
+  const [joinGameId, setJoinGameId] = useState('');
+  const [copied, setCopied] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [notificationSent, setNotificationSent] = useState(false);
+  
+  const [showPieces, setShowPieces] = useState(true);
+  const [zoom, setZoom] = useState(1);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const svgRef = useRef(null);
+  
+  const [pillbugMode, setPillbugMode] = useState(null);
+  const [pillbugSource, setPillbugSource] = useState(null);
+  const [pillbugTarget, setPillbugTarget] = useState(null);
+  const [pillbugDestinations, setPillbugDestinations] = useState([]);
+  const [lastMovedPiece, setLastMovedPiece] = useState(null);
+  
+  const [showHelp, setShowHelp] = useState(false);
+  
+  const [isLiveGame, setIsLiveGame] = useState(false);
+  const [lastSyncTime, setLastSyncTime] = useState(null);
+  const [isConnected, setIsConnected] = useState(true);
+  const pollIntervalRef = useRef(null);
+
+  const getNeighbors = (q, r) => [
+    [q + 1, r], [q - 1, r], [q, r + 1],
+    [q, r - 1], [q + 1, r - 1], [q - 1, r + 1]
+  ];
+
+  const hexToPixel = (q, r, size) => {
+    const x = size * (3/2 * q);
+    const y = size * (Math.sqrt(3)/2 * q + Math.sqrt(3) * r);
+    return { x, y };
+  };
+
+  const getPiecesAtPosition = (q, r) => {
+    return gameState.board
+      .filter(p => p.q === q && p.r === r)
+      .sort((a, b) => (a.z || 0) - (b.z || 0));
+  };
+
+  const getTopPieceAt = (q, r) => {
+    const pieces = getPiecesAtPosition(q, r);
+    return pieces.length > 0 ? pieces[pieces.length - 1] : null;
+  };
+
+  const getHeightAt = (q, r) => {
+    const pieces = getPiecesAtPosition(q, r);
+    return pieces.length;
+  };
+
+  const checkWinner = (board) => {
+    const whiteQueen = board.find(p => p.type === 'queen' && p.color === 'white');
+    const blackQueen = board.find(p => p.type === 'queen' && p.color === 'black');
+    if (!whiteQueen || !blackQueen) return null;
+    
+    const isQueenSurrounded = (queen) => {
+      return getNeighbors(queen.q, queen.r).every(([q, r]) =>
+        board.some(p => p.q === q && p.r === r)
+      );
+    };
+    
+    const whiteSurrounded = isQueenSurrounded(whiteQueen);
+    const blackSurrounded = isQueenSurrounded(blackQueen);
+    
+    if (whiteSurrounded && blackSurrounded) return 'draw';
+    if (whiteSurrounded) return 'black';
+    if (blackSurrounded) return 'white';
+    return null;
+  };
+
+  const isValidPlacement = (q, r, board, player) => {
+    if (board.some(p => p.q === q && p.r === r)) return false;
+    if (board.length === 0) return true;
+    
+    const hasNeighbor = getNeighbors(q, r).some(([nq, nr]) => 
+      board.some(p => p.q === nq && p.r === nr)
+    );
+    if (!hasNeighbor) return false;
+
+    const playerPieceCount = board.filter(p => p.color === player).length;
+    if (playerPieceCount === 0) return true;
+
+    const touchesOpponent = getNeighbors(q, r).some(([nq, nr]) => {
+      const topPiece = getTopPieceAt(nq, nr);
+      return topPiece && topPiece.color !== player;
+    });
+
+    return !touchesOpponent;
+  };
+
+  const getValidPlacements = () => {
+    if (gameState.board.length === 0) return [[0, 0]];
+    
+    const placements = new Set();
+    gameState.board.forEach(piece => {
+      getNeighbors(piece.q, piece.r).forEach(([q, r]) => {
+        if (isValidPlacement(q, r, gameState.board, gameState.currentPlayer)) {
+          placements.add(`${q},${r}`);
+        }
+      });
+    });
+
+    return Array.from(placements).map(key => key.split(',').map(Number));
+  };
+
+  const isMyTurn = () => {
+    if (gameMode !== 'async' && gameMode !== 'live') return true;
+    return gameState.currentPlayer === playerColor;
+  };
+
+  const handlePieceSelect = (type) => {
+    if (gameState.winner) return;
+    if (!isMyTurn()) return;
+    
+    const pieces = gameState.currentPlayer === 'white' ? gameState.whitePieces : gameState.blackPieces;
+    if (pieces[type].count > 0) {
+      const mustPlaceQueen = gameState.turn === 4 && 
+        ((gameState.currentPlayer === 'white' && !gameState.whiteQueenPlaced) || 
+         (gameState.currentPlayer === 'black' && !gameState.blackQueenPlaced));
+      if (mustPlaceQueen && type !== 'queen') return;
+      
+      setGameState(prev => ({ ...prev, selectedPiece: type, selectedBoardPiece: null }));
+      setValidMoves(getValidPlacements());
+    }
+  };
+
+  const cancelPillbugMode = () => {
+    setPillbugMode(null);
+    setPillbugSource(null);
+    setPillbugTarget(null);
+    setPillbugDestinations([]);
+    setValidMoves([]);
+  };
+
+  const handleBoardPieceClick = (piece) => {
+    if (gameState.winner) return;
+    if (!isMyTurn()) return;
+    
+    if (pillbugMode === 'selectPiece') {
+      const validGrabs = getPillbugGrabbablePieces(pillbugSource);
+      if (validGrabs.some(p => p.id === piece.id)) {
+        setPillbugTarget(piece);
+        const destinations = getPillbugDestinations(pillbugSource, piece);
+        setPillbugDestinations(destinations);
+        setPillbugMode('selectDestination');
+        setValidMoves(destinations.map(d => [d.q, d.r, 0]));
+      }
+      return;
+    }
+    
+    if (piece.color !== gameState.currentPlayer) return;
+    
+    const topPiece = getTopPieceAt(piece.q, piece.r);
+    if (topPiece.id !== piece.id) return;
+    
+    const queenPlaced = gameState.currentPlayer === 'white' ? gameState.whiteQueenPlaced : gameState.blackQueenPlaced;
+    if (!queenPlaced) return;
+
+    if ((piece.z || 0) < getHeightAt(piece.q, piece.r) - 1) return;
+
+    if ((piece.z || 0) === 0) {
+      const otherPieces = gameState.board.filter(p => p.id !== piece.id && (p.z || 0) === 0);
+      if (otherPieces.length === 0) {
+        const stackedPieces = gameState.board.filter(p => p.q === piece.q && p.r === piece.r && p.id !== piece.id);
+        if (stackedPieces.length > 0) return;
+      } else {
+        const visited = new Set();
+        const queue = [otherPieces[0]];
+        visited.add(`${otherPieces[0].q},${otherPieces[0].r}`);
+        
+        while (queue.length > 0) {
+          const current = queue.shift();
+          getNeighbors(current.q, current.r).forEach(([nq, nr]) => {
+            const key = `${nq},${nr}`;
+            if (!visited.has(key)) {
+              const neighbor = otherPieces.find(p => p.q === nq && p.r === nr);
+              if (neighbor) {
+                visited.add(key);
+                queue.push(neighbor);
+              }
+            }
+          });
+        }
+        
+        if (visited.size !== otherPieces.length) {
+          return;
+        }
+      }
+    }
+
+    const moves = getMovesForPiece(piece);
+    setGameState(prev => ({ ...prev, selectedBoardPiece: piece, selectedPiece: null }));
+    setValidMoves(moves);
+    
+    setPillbugMode(null);
+    setPillbugSource(null);
+    setPillbugTarget(null);
+    setPillbugDestinations([]);
+  };
+
+  const getPillbugGrabbablePieces = (pillbug) => {
+    if (!pillbug) return [];
+    const grabbable = [];
+    getNeighbors(pillbug.q, pillbug.r).forEach(([nq, nr]) => {
+      const topPiece = getTopPieceAt(nq, nr);
+      if (topPiece) {
+        const piecesAtPos = getPiecesAtPosition(nq, nr);
+        if (piecesAtPos.length === 1) {
+          if (!lastMovedPiece || topPiece.id !== lastMovedPiece.id) {
+            if (canPillbugGrab(pillbug, topPiece)) {
+              grabbable.push(topPiece);
+            }
+          }
+        }
+      }
+    });
+    return grabbable;
+  };
+
+  const canPillbugGrab = (pillbug, target) => {
+    const otherPieces = gameState.board.filter(p => p.id !== target.id && (p.z || 0) === 0);
+    if (otherPieces.length === 0) return true;
+    
+    const visited = new Set();
+    const queue = [otherPieces[0]];
+    visited.add(`${otherPieces[0].q},${otherPieces[0].r}`);
+    
+    while (queue.length > 0) {
+      const current = queue.shift();
+      getNeighbors(current.q, current.r).forEach(([nq, nr]) => {
+        const key = `${nq},${nr}`;
+        if (!visited.has(key)) {
+          const neighbor = otherPieces.find(p => p.q === nq && p.r === nr);
+          if (neighbor) {
+            visited.add(key);
+            queue.push(neighbor);
+          }
+        }
+      });
+    }
+    
+    return visited.size === otherPieces.length;
+  };
+
+  const getPillbugDestinations = (pillbug, target) => {
+    const destinations = [];
+    getNeighbors(pillbug.q, pillbug.r).forEach(([nq, nr]) => {
+      const piecesAtDest = getPiecesAtPosition(nq, nr);
+      if (piecesAtDest.length === 0) {
+        if (nq !== target.q || nr !== target.r) {
+          destinations.push({ q: nq, r: nr });
+        }
+      }
+    });
+    return destinations;
+  };
+
+  const activatePillbugAbility = (pillbug) => {
+    const grabbable = getPillbugGrabbablePieces(pillbug);
+    if (grabbable.length > 0) {
+      setPillbugMode('selectPiece');
+      setPillbugSource(pillbug);
+      setGameState(prev => ({ ...prev, selectedBoardPiece: null, selectedPiece: null }));
+      setValidMoves([]);
+    }
+  };
+
+  const executePillbugMove = (destQ, destR) => {
+    if (!pillbugSource || !pillbugTarget) return;
+    
+    const newBoard = gameState.board.map(p => 
+      p.id === pillbugTarget.id ? { ...p, q: destQ, r: destR, z: 0 } : p
+    );
+    
+    const winner = checkWinner(newBoard);
+    const newState = {
+      ...gameState,
+      board: newBoard,
+      currentPlayer: gameState.currentPlayer === 'white' ? 'black' : 'white',
+      turn: gameState.currentPlayer === 'black' ? gameState.turn + 1 : gameState.turn,
+      selectedBoardPiece: null,
+      selectedPiece: null,
+      lastMoveTime: new Date().toISOString(),
+      winner
+    };
+    
+    setGameState(newState);
+    setLastMovedPiece(pillbugTarget);
+    setValidMoves([]);
+    setPillbugMode(null);
+    setPillbugSource(null);
+    setPillbugTarget(null);
+    setPillbugDestinations([]);
+    setNotificationSent(false);
+    
+    if ((gameMode === 'async' || gameMode === 'live') && gameState.gameId) {
+      saveGameState(newState);
+    }
+  };
+
+  const canSlideToSpace = (piece, targetQ, targetR) => {
+    const piecesAtTarget = gameState.board.filter(p => p.q === targetQ && p.r === targetR && p.id !== piece.id);
+    if (piecesAtTarget.length > 0) return false;
+    
+    const hasNeighbor = getNeighbors(targetQ, targetR).some(([nq, nr]) =>
+      gameState.board.some(p => p.q === nq && p.r === nr && p.id !== piece.id)
+    );
+    if (!hasNeighbor) return false;
+    
+    const commonNeighbors = getNeighbors(piece.q, piece.r).filter(([q, r]) =>
+      getNeighbors(targetQ, targetR).some(([tq, tr]) => tq === q && tr === r)
+    );
+    
+    const canSlide = commonNeighbors.some(([q, r]) =>
+      !gameState.board.some(p => p.q === q && p.r === r && p.id !== piece.id)
+    );
+    
+    return canSlide;
+  };
+
+  const getMovesForPiece = (piece) => {
+    const moves = [];
+    const pieceZ = piece.z || 0;
+
+    const canSlideFromTo = (fromQ, fromR, toQ, toR) => {
+      const piecesAtTarget = gameState.board.filter(p => p.q === toQ && p.r === toR && p.id !== piece.id);
+      if (piecesAtTarget.length > 0) return false;
+      const hasNeighbor = getNeighbors(toQ, toR).some(([nq, nr]) =>
+        gameState.board.some(p => p.q === nq && p.r === nr && p.id !== piece.id)
+      );
+      if (!hasNeighbor) return false;
+      const fromNeighbors = getNeighbors(fromQ, fromR);
+      const toNeighbors = getNeighbors(toQ, toR);
+      const commonNeighbors = fromNeighbors.filter(([q, r]) =>
+        toNeighbors.some(([tq, tr]) => tq === q && tr === r)
+      );
+      return commonNeighbors.some(([q, r]) =>
+        !gameState.board.some(p => p.q === q && p.r === r && p.id !== piece.id)
+      );
+    };
+
+    switch(piece.type) {
+      case 'queen':
+        getNeighbors(piece.q, piece.r).forEach(([q, r]) => {
+          if (canSlideToSpace(piece, q, r)) {
+            moves.push([q, r, 0]);
+          }
+        });
+        break;
+
+      case 'ant':
+        const antVisited = new Set([`${piece.q},${piece.r}`]);
+        const antQueue = [[piece.q, piece.r]];
+        while (antQueue.length > 0) {
+          const [cq, cr] = antQueue.shift();
+          getNeighbors(cq, cr).forEach(([nq, nr]) => {
+            const key = `${nq},${nr}`;
+            if (!antVisited.has(key) && canSlideFromTo(cq, cr, nq, nr)) {
+              antVisited.add(key);
+              moves.push([nq, nr, 0]);
+              antQueue.push([nq, nr]);
+            }
+          });
+        }
+        break;
+
+      case 'grasshopper':
+        [[1,0], [-1,0], [0,1], [0,-1], [1,-1], [-1,1]].forEach(([dq, dr]) => {
+          let q = piece.q + dq;
+          let r = piece.r + dr;
+          let jumped = 0;
+          while (gameState.board.some(p => p.q === q && p.r === r && p.id !== piece.id)) {
+            jumped++;
+            q += dq;
+            r += dr;
+          }
+          if (jumped > 0) moves.push([q, r, 0]);
+        });
+        break;
+
+      case 'spider':
+        const spiderMoves = new Set();
+        const exploreSpider = (fromQ, fromR, depth, path) => {
+          if (depth === 3) {
+            spiderMoves.add(`${fromQ},${fromR}`);
+            return;
+          }
+          getNeighbors(fromQ, fromR).forEach(([nq, nr]) => {
+            const key = `${nq},${nr}`;
+            if (!path.includes(key) && canSlideFromTo(fromQ, fromR, nq, nr)) {
+              exploreSpider(nq, nr, depth + 1, [...path, key]);
+            }
+          });
+        };
+        getNeighbors(piece.q, piece.r).forEach(([nq, nr]) => {
+          if (canSlideFromTo(piece.q, piece.r, nq, nr)) {
+            exploreSpider(nq, nr, 1, [`${piece.q},${piece.r}`, `${nq},${nr}`]);
+          }
+        });
+        spiderMoves.forEach(key => {
+          const [q, r] = key.split(',').map(Number);
+          moves.push([q, r, 0]);
+        });
+        break;
+
+      case 'beetle':
+        getNeighbors(piece.q, piece.r).forEach(([q, r]) => {
+          const piecesAtTarget = getPiecesAtPosition(q, r).filter(p => p.id !== piece.id);
+          if (piecesAtTarget.length > 0) {
+            moves.push([q, r, piecesAtTarget.length]);
+          } else if (pieceZ > 0) {
+            moves.push([q, r, 0]);
+          } else if (canSlideToSpace(piece, q, r)) {
+            moves.push([q, r, 0]);
+          }
+        });
+        break;
+
+      case 'mosquito':
+        if (pieceZ > 0) {
+          getNeighbors(piece.q, piece.r).forEach(([q, r]) => {
+            const piecesAtTarget = getPiecesAtPosition(q, r).filter(p => p.id !== piece.id);
+            if (piecesAtTarget.length > 0) {
+              moves.push([q, r, piecesAtTarget.length]);
+            } else {
+              moves.push([q, r, 0]);
+            }
+          });
+        } else {
+          const adjacentTypes = new Set();
+          let hasNonMosquitoNeighbor = false;
+          
+          getNeighbors(piece.q, piece.r).forEach(([nq, nr]) => {
+            const adjacentPiece = getTopPieceAt(nq, nr);
+            if (adjacentPiece) {
+              if (adjacentPiece.type !== 'mosquito') {
+                hasNonMosquitoNeighbor = true;
+                adjacentTypes.add(adjacentPiece.type);
+              }
+            }
+          });
+          
+          if (!hasNonMosquitoNeighbor) {
+            break;
+          }
+          
+          adjacentTypes.forEach(type => {
+            const fakePiece = { ...piece, type };
+            const typeMoves = getMovesForPiece(fakePiece);
+            typeMoves.forEach(move => {
+              const moveKey = `${move[0]},${move[1]},${move[2]}`;
+              if (!moves.some(m => `${m[0]},${m[1]},${m[2]}` === moveKey)) {
+                moves.push(move);
+              }
+            });
+          });
+        }
+        break;
+
+      case 'ladybug':
+        const ladybugMoves = new Set();
+        getNeighbors(piece.q, piece.r).forEach(([q1, r1]) => {
+          const piecesAt1 = getPiecesAtPosition(q1, r1).filter(p => p.id !== piece.id);
+          if (piecesAt1.length > 0) {
+            getNeighbors(q1, r1).forEach(([q2, r2]) => {
+              if (q2 === piece.q && r2 === piece.r) return;
+              const piecesAt2 = getPiecesAtPosition(q2, r2).filter(p => p.id !== piece.id);
+              if (piecesAt2.length > 0) {
+                getNeighbors(q2, r2).forEach(([q3, r3]) => {
+                  if (q3 === piece.q && r3 === piece.r) return;
+                  const piecesAt3 = getPiecesAtPosition(q3, r3).filter(p => p.id !== piece.id);
+                  if (piecesAt3.length === 0) {
+                    const hasNeighbor = getNeighbors(q3, r3).some(([nq, nr]) =>
+                      gameState.board.some(p => p.q === nq && p.r === nr && p.id !== piece.id)
+                    );
+                    if (hasNeighbor) {
+                      ladybugMoves.add(`${q3},${r3}`);
+                    }
+                  }
+                });
+              }
+            });
+          }
+        });
+        ladybugMoves.forEach(key => {
+          const [q, r] = key.split(',').map(Number);
+          moves.push([q, r, 0]);
+        });
+        break;
+
+      case 'pillbug':
+        getNeighbors(piece.q, piece.r).forEach(([q, r]) => {
+          if (canSlideToSpace(piece, q, r)) {
+            moves.push([q, r, 0]);
+          }
+        });
+        break;
+
+      default:
+        getNeighbors(piece.q, piece.r).forEach(([q, r]) => {
+          if (canSlideToSpace(piece, q, r)) {
+            moves.push([q, r, 0]);
+          }
+        });
+        break;
+    }
+
+    return moves;
+  };
+
+  const movePiece = (targetQ, targetR, targetZ = 0) => {
+    if (!gameState.selectedBoardPiece) return;
+
+    const piece = gameState.selectedBoardPiece;
+    const newBoard = gameState.board.map(p => 
+      p.id === piece.id ? { ...p, q: targetQ, r: targetR, z: targetZ } : p
+    );
+
+    const winner = checkWinner(newBoard);
+    const newState = {
+      ...gameState,
+      board: newBoard,
+      currentPlayer: gameState.currentPlayer === 'white' ? 'black' : 'white',
+      turn: gameState.currentPlayer === 'black' ? gameState.turn + 1 : gameState.turn,
+      selectedBoardPiece: null,
+      selectedPiece: null,
+      lastMoveTime: new Date().toISOString(),
+      winner
+    };
+
+    setGameState(newState);
+    setLastMovedPiece(piece);
+    setValidMoves([]);
+    setNotificationSent(false);
+    cancelPillbugMode();
+    
+    if ((gameMode === 'async' || gameMode === 'live') && gameState.gameId) {
+      saveGameState(newState);
+    }
+  };
+
+  const placePiece = (q, r) => {
+    if (!gameState.selectedPiece) return;
+
+    const newPiece = {
+      type: gameState.selectedPiece,
+      color: gameState.currentPlayer,
+      q, r,
+      z: 0,
+      id: Date.now()
+    };
+
+    const player = gameState.currentPlayer;
+    const newBoard = [...gameState.board, newPiece];
+    const winner = checkWinner(newBoard);
+
+    const newState = {
+      ...gameState,
+      board: newBoard,
+      whitePieces: player === 'white' ? {
+        ...gameState.whitePieces,
+        [gameState.selectedPiece]: {
+          ...gameState.whitePieces[gameState.selectedPiece],
+          count: gameState.whitePieces[gameState.selectedPiece].count - 1
+        }
+      } : gameState.whitePieces,
+      blackPieces: player === 'black' ? {
+        ...gameState.blackPieces,
+        [gameState.selectedPiece]: {
+          ...gameState.blackPieces[gameState.selectedPiece],
+          count: gameState.blackPieces[gameState.selectedPiece].count - 1
+        }
+      } : gameState.blackPieces,
+      whiteQueenPlaced: gameState.selectedPiece === 'queen' && player === 'white' ? true : gameState.whiteQueenPlaced,
+      blackQueenPlaced: gameState.selectedPiece === 'queen' && player === 'black' ? true : gameState.blackQueenPlaced,
+      currentPlayer: player === 'white' ? 'black' : 'white',
+      turn: player === 'black' ? gameState.turn + 1 : gameState.turn,
+      selectedPiece: null,
+      selectedBoardPiece: null,
+      lastMoveTime: new Date().toISOString(),
+      winner
+    };
+
+    setGameState(newState);
+    setValidMoves([]);
+    setNotificationSent(false);
+    
+    if ((gameMode === 'async' || gameMode === 'live') && gameState.gameId) {
+      saveGameState(newState);
+    }
+  };
+
+  const handleHexClick = (q, r, z = 0) => {
+    if (gameState.winner) return;
+    if (!isMyTurn()) return;
+    
+    if (pillbugMode === 'selectDestination') {
+      if (pillbugDestinations.some(d => d.q === q && d.r === r)) {
+        executePillbugMove(q, r);
+        return;
+      }
+    }
+    
+    const topPiece = getTopPieceAt(q, r);
+    
+    if (gameState.selectedBoardPiece) {
+      const validMove = validMoves.find(([vq, vr]) => vq === q && vr === r);
+      if (validMove) {
+        movePiece(q, r, validMove[2] || 0);
+      }
+    } else if (topPiece && !gameState.selectedPiece) {
+      handleBoardPieceClick(topPiece);
+    } else if (gameState.selectedPiece && validMoves.some(([vq, vr]) => vq === q && vr === r)) {
+      placePiece(q, r);
+    }
+  };
+
+  const saveGameState = async (state) => {
+    try {
+      await storage.set(`hive-game-${state.gameId}`, JSON.stringify({
+        ...state,
+        playerNames: { white: playerColor === 'white' ? playerName : opponentName, black: playerColor === 'black' ? playerName : opponentName }
+      }));
+    } catch (e) {
+      console.log('Could not save game state');
+    }
+  };
+
+  const loadGameState = async (gameId) => {
+    try {
+      const result = await storage.get(`hive-game-${gameId}`);
+      if (result && result.value) {
+        return JSON.parse(result.value);
+      }
+    } catch (e) {
+      console.log('Could not load game state');
+    }
+    return null;
+  };
+
+  const createAsyncGame = () => {
+    const gameId = generateGameId();
+    const newState = {
+      ...gameState,
+      gameId,
+      board: [],
+      currentPlayer: 'white',
+      turn: 1,
+      whitePieces: { ...PIECES },
+      blackPieces: { ...PIECES },
+      whiteQueenPlaced: false,
+      blackQueenPlaced: false,
+      winner: null,
+      lastMoveTime: new Date().toISOString()
+    };
+    setGameState(newState);
+    setPlayerColor('white');
+    setGameMode('async');
+    setShowMenu(false);
+    setShowShareModal(true);
+    saveGameState(newState);
+  };
+
+  const joinAsyncGame = async () => {
+    const savedState = await loadGameState(joinGameId.toUpperCase());
+    if (savedState) {
+      setGameState(savedState);
+      setPlayerColor('black');
+      setGameMode('async');
+      setShowMenu(false);
+      if (savedState.playerNames) {
+        setOpponentName(savedState.playerNames.white || 'White');
+      }
+    } else {
+      alert('Game not found. Check the game code and try again.');
+    }
+  };
+
+  const createLiveGame = () => {
+    const gameId = generateGameId();
+    const newState = {
+      ...gameState,
+      gameId,
+      board: [],
+      currentPlayer: 'white',
+      turn: 1,
+      whitePieces: { ...PIECES },
+      blackPieces: { ...PIECES },
+      whiteQueenPlaced: false,
+      blackQueenPlaced: false,
+      winner: null,
+      lastMoveTime: new Date().toISOString()
+    };
+    setGameState(newState);
+    setPlayerColor('white');
+    setGameMode('live');
+    setIsLiveGame(true);
+    setShowMenu(false);
+    setShowShareModal(true);
+    saveGameState(newState);
+    startPolling(gameId);
+  };
+
+  const joinLiveGame = async () => {
+    const savedState = await loadGameState(joinGameId.toUpperCase());
+    if (savedState) {
+      setGameState(savedState);
+      setPlayerColor('black');
+      setGameMode('live');
+      setIsLiveGame(true);
+      setShowMenu(false);
+      if (savedState.playerNames) {
+        setOpponentName(savedState.playerNames.white || 'White');
+      }
+      startPolling(joinGameId.toUpperCase());
+    } else {
+      alert('Game not found. Check the game code and try again.');
+    }
+  };
+
+  const startPolling = (gameId) => {
+    if (pollIntervalRef.current) {
+      clearInterval(pollIntervalRef.current);
+    }
+    
+    pollIntervalRef.current = setInterval(async () => {
+      try {
+        const savedState = await loadGameState(gameId);
+        if (savedState && savedState.lastMoveTime !== lastSyncTime) {
+          if (savedState.currentPlayer === playerColor || savedState.winner) {
+            setGameState(savedState);
+            setLastSyncTime(savedState.lastMoveTime);
+            setIsConnected(true);
+            
+            if (savedState.currentPlayer === playerColor && !savedState.winner) {
+              try {
+                navigator.vibrate && navigator.vibrate(200);
+              } catch (e) {}
+            }
+          }
+        }
+        setIsConnected(true);
+      } catch (e) {
+        setIsConnected(false);
+      }
+    }, 2000);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (gameState.winner && pollIntervalRef.current) {
+      clearInterval(pollIntervalRef.current);
+    }
+  }, [gameState.winner]);
+
+  const sendNotification = () => {
+    if (!opponentContact) return;
+    
+    const gameUrl = `${window.location.origin}${window.location.pathname}?game=${gameState.gameId}`;
+    const message = `It's your turn in Hive! Game code: ${gameState.gameId}\n${gameUrl}`;
+    
+    if (opponentContact.includes('@')) {
+      window.open(`mailto:${opponentContact}?subject=Your turn in Hive!&body=${encodeURIComponent(message)}`);
+    } else {
+      window.open(`sms:${opponentContact}?body=${encodeURIComponent(message)}`);
+    }
+    setNotificationSent(true);
+  };
+
+  const copyGameLink = () => {
+    const gameUrl = `${window.location.origin}${window.location.pathname}?game=${gameState.gameId}`;
+    navigator.clipboard.writeText(`Join my Hive game!\nGame code: ${gameState.gameId}\n${gameUrl}`);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const resetGame = () => {
+    if (pollIntervalRef.current) {
+      clearInterval(pollIntervalRef.current);
+    }
+    setGameState({
+      board: [],
+      currentPlayer: 'white',
+      turn: 1,
+      whitePieces: { ...PIECES },
+      blackPieces: { ...PIECES },
+      selectedPiece: null,
+      selectedBoardPiece: null,
+      whiteQueenPlaced: false,
+      blackQueenPlaced: false,
+      winner: null,
+      gameId: gameState.gameId,
+      lastMoveTime: null
+    });
+    setValidMoves([]);
+    setHoveredStack(null);
+  };
+
+  const handlePointerDown = (e) => {
+    if (e.target.closest('polygon') || e.target.closest('g[style*="cursor: pointer"]')) return;
+    setIsDragging(true);
+    setDragStart({ x: e.clientX - pan.x, y: e.clientY - pan.y });
+  };
+
+  const handlePointerMove = (e) => {
+    if (!isDragging) return;
+    setPan({ x: e.clientX - dragStart.x, y: e.clientY - dragStart.y });
+  };
+
+  const handlePointerUp = () => {
+    setIsDragging(false);
+  };
+
+  const renderInsect = (type, color, scale = 1.2) => {
+    const fill = color === 'white' ? '#1f2937' : '#f3f4f6';
+    const stroke = color === 'white' ? '#374151' : '#d1d5db';
+    
+    if (type === 'queen') {
+      return (
+        <g transform={`scale(${scale})`}>
+          <ellipse cx="-8" cy="-2" rx="6" ry="10" fill={fill} opacity="0.5" transform="rotate(-20 -8 -2)"/>
+          <ellipse cx="8" cy="-2" rx="6" ry="10" fill={fill} opacity="0.5" transform="rotate(20 8 -2)"/>
+          <ellipse cx="0" cy="0" rx="6" ry="12" fill={fill}/>
+          <line x1="-5" y1="-4" x2="5" y2="-4" stroke={stroke} strokeWidth="2"/>
+          <line x1="-5" y1="0" x2="5" y2="0" stroke={stroke} strokeWidth="2"/>
+          <line x1="-5" y1="4" x2="5" y2="4" stroke={stroke} strokeWidth="2"/>
+          <circle cx="0" cy="-10" r="4" fill={fill}/>
+          <path d="M-2,-13 L-4,-17 M2,-13 L4,-17" stroke={fill} strokeWidth="1.5" fill="none"/>
+        </g>
+      );
+    }
+    if (type === 'beetle') {
+      return (
+        <g transform={`scale(${scale})`}>
+          <ellipse cx="0" cy="2" rx="10" ry="12" fill={fill}/>
+          <line x1="0" y1="-8" x2="0" y2="12" stroke={stroke} strokeWidth="1.5"/>
+          <circle cx="0" cy="-8" r="5" fill={fill}/>
+          <path d="M-8,-2 L-12,-6 M-9,3 L-13,5 M-8,8 L-12,12" stroke={fill} strokeWidth="2" fill="none"/>
+          <path d="M8,-2 L12,-6 M9,3 L13,5 M8,8 L12,12" stroke={fill} strokeWidth="2" fill="none"/>
+        </g>
+      );
+    }
+    if (type === 'spider') {
+      return (
+        <g transform={`scale(${scale})`}>
+          <circle cx="0" cy="-4" r="5" fill={fill}/>
+          <ellipse cx="0" cy="5" rx="6" ry="8" fill={fill}/>
+          <path d="M-4,-6 Q-10,-10 -12,-4 M-5,-2 Q-12,-2 -14,4 M-5,2 Q-12,6 -12,12 M-4,8 Q-8,14 -6,18" stroke={fill} strokeWidth="1.5" fill="none"/>
+          <path d="M4,-6 Q10,-10 12,-4 M5,-2 Q12,-2 14,4 M5,2 Q12,6 12,12 M4,8 Q8,14 6,18" stroke={fill} strokeWidth="1.5" fill="none"/>
+        </g>
+      );
+    }
+    if (type === 'grasshopper') {
+      return (
+        <g transform={`scale(${scale})`}>
+          <ellipse cx="0" cy="0" rx="5" ry="12" fill={fill}/>
+          <circle cx="0" cy="-10" r="4" fill={fill}/>
+          <path d="M-2,-13 L-3,-18 M2,-13 L3,-18" stroke={fill} strokeWidth="1" fill="none"/>
+          <path d="M-4,-2 L-8,2 M4,-2 L8,2" stroke={fill} strokeWidth="1.5" fill="none"/>
+          <path d="M-4,6 L-10,2 L-8,10 L-5,14" stroke={fill} strokeWidth="2" fill="none"/>
+          <path d="M4,6 L10,2 L8,10 L5,14" stroke={fill} strokeWidth="2" fill="none"/>
+        </g>
+      );
+    }
+    if (type === 'ant') {
+      return (
+        <g transform={`scale(${scale})`}>
+          <circle cx="0" cy="-9" r="4" fill={fill}/>
+          <ellipse cx="0" cy="-2" rx="3" ry="4" fill={fill}/>
+          <ellipse cx="0" cy="7" rx="5" ry="6" fill={fill}/>
+          <path d="M-2,-12 L-5,-16 L-7,-15 M2,-12 L5,-16 L7,-15" stroke={fill} strokeWidth="1" fill="none"/>
+          <path d="M-3,-4 L-8,-2 M-3,0 L-9,2 M-3,3 L-8,6" stroke={fill} strokeWidth="1.5" fill="none"/>
+          <path d="M3,-4 L8,-2 M3,0 L9,2 M3,3 L8,6" stroke={fill} strokeWidth="1.5" fill="none"/>
+        </g>
+      );
+    }
+    if (type === 'mosquito') {
+      return (
+        <g transform={`scale(${scale})`}>
+          <line x1="0" y1="-10" x2="0" y2="-18" stroke={fill} strokeWidth="1"/>
+          <circle cx="0" cy="-8" r="3" fill={fill}/>
+          <ellipse cx="0" cy="-3" rx="3" ry="4" fill={fill}/>
+          <ellipse cx="-6" cy="-3" rx="5" ry="2" fill={fill} opacity="0.5"/>
+          <ellipse cx="6" cy="-3" rx="5" ry="2" fill={fill} opacity="0.5"/>
+          <ellipse cx="0" cy="6" rx="2" ry="8" fill={fill}/>
+          <path d="M-2,-1 L-8,6 L-10,10 M-2,2 L-7,10 L-8,14" stroke={fill} strokeWidth="1" fill="none"/>
+          <path d="M2,-1 L8,6 L10,10 M2,2 L7,10 L8,14" stroke={fill} strokeWidth="1" fill="none"/>
+        </g>
+      );
+    }
+    if (type === 'ladybug') {
+      return (
+        <g transform={`scale(${scale})`}>
+          <circle cx="0" cy="-10" r="4" fill={fill}/>
+          <circle cx="0" cy="2" rx="10" fill={fill}/>
+          <line x1="0" y1="-6" x2="0" y2="12" stroke={stroke} strokeWidth="1.5"/>
+          <circle cx="-4" cy="-2" r="2" fill={stroke}/>
+          <circle cx="4" cy="-2" r="2" fill={stroke}/>
+          <circle cx="-4" cy="5" r="2" fill={stroke}/>
+          <circle cx="4" cy="5" r="2" fill={stroke}/>
+          <path d="M-8,0 L-12,2 M-8,5 L-12,8 M8,0 L12,2 M8,5 L12,8" stroke={fill} strokeWidth="1.5" fill="none"/>
+        </g>
+      );
+    }
+    if (type === 'pillbug') {
+      return (
+        <g transform={`scale(${scale})`}>
+          <ellipse cx="0" cy="0" rx="10" ry="12" fill={fill}/>
+          <path d="M-9,-6 Q0,-8 9,-6" stroke={stroke} strokeWidth="1" fill="none"/>
+          <path d="M-10,-2 Q0,-3 10,-2" stroke={stroke} strokeWidth="1" fill="none"/>
+          <path d="M-10,2 Q0,1 10,2" stroke={stroke} strokeWidth="1" fill="none"/>
+          <path d="M-9,6 Q0,5 9,6" stroke={stroke} strokeWidth="1" fill="none"/>
+          <circle cx="0" cy="-10" r="3" fill={fill}/>
+          <path d="M-2,-12 L-3,-14 M2,-12 L3,-14" stroke={fill} strokeWidth="1" fill="none"/>
+          <path d="M-9,-4 L-11,-3 M-9,0 L-11,1 M-9,4 L-11,5 M-8,8 L-10,10" stroke={fill} strokeWidth="1" fill="none"/>
+          <path d="M9,-4 L11,-3 M9,0 L11,1 M9,4 L11,5 M8,8 L10,10" stroke={fill} strokeWidth="1" fill="none"/>
+        </g>
+      );
+    }
+    return <circle cx="0" cy="0" r="8" fill={fill} />;
+  };
+
+  const renderStack = (q, r, pieces) => {
+    const size = 25 * zoom;
+    const { x, y } = hexToPixel(q, r, size);
+    const stackKey = `${q},${r}`;
+    const isSelected = gameState.selectedBoardPiece && 
+                       gameState.selectedBoardPiece.q === q && 
+                       gameState.selectedBoardPiece.r === r;
+    
+    const topPiece = pieces[pieces.length - 1];
+    const hasStack = pieces.length > 1;
+    
+    const isGrabbable = pillbugMode === 'selectPiece' && pillbugSource && 
+      getPillbugGrabbablePieces(pillbugSource).some(p => p.id === topPiece.id);
+    
+    const isPillbugSource = pillbugSource && pillbugSource.id === topPiece.id;
+    const isPillbugTarget = pillbugTarget && pillbugTarget.id === topPiece.id;
+    
+    return (
+      <g
+        key={stackKey}
+        transform={`translate(${200 + x + pan.x}, ${200 + y + pan.y})`}
+        onClick={() => handleHexClick(q, r)}
+        onMouseEnter={() => setHoveredStack(stackKey)}
+        onMouseLeave={() => setHoveredStack(null)}
+        onTouchStart={() => setHoveredStack(stackKey)}
+        style={{ cursor: isMyTurn() ? 'pointer' : 'default' }}
+      >
+        {isGrabbable && (
+          <polygon
+            points={`${26*zoom},0 ${13*zoom},${22*zoom} ${-13*zoom},${22*zoom} ${-26*zoom},0 ${-13*zoom},${-22*zoom} ${13*zoom},${-22*zoom}`}
+            fill="none"
+            stroke="#a855f7"
+            strokeWidth="4"
+            opacity={0.8}
+          />
+        )}
+        
+        {isPillbugSource && (
+          <polygon
+            points={`${26*zoom},0 ${13*zoom},${22*zoom} ${-13*zoom},${22*zoom} ${-26*zoom},0 ${-13*zoom},${-22*zoom} ${13*zoom},${-22*zoom}`}
+            fill="none"
+            stroke="#22c55e"
+            strokeWidth="4"
+            opacity={0.8}
+          />
+        )}
+        
+        {isPillbugTarget && (
+          <polygon
+            points={`${26*zoom},0 ${13*zoom},${22*zoom} ${-13*zoom},${22*zoom} ${-26*zoom},0 ${-13*zoom},${-22*zoom} ${13*zoom},${-22*zoom}`}
+            fill="none"
+            stroke="#f59e0b"
+            strokeWidth="4"
+            opacity={0.8}
+          />
+        )}
+        
+        <polygon
+          points={`${22*zoom},0 ${11*zoom},${19*zoom} ${-11*zoom},${19*zoom} ${-22*zoom},0 ${-11*zoom},${-19*zoom} ${11*zoom},${-19*zoom}`}
+          fill={topPiece.color === 'white' ? '#f3f4f6' : '#1f2937'}
+          stroke={isSelected ? '#f59e0b' : topPiece.color === 'white' ? '#d1d5db' : '#374151'}
+          strokeWidth={isSelected ? "3" : "2"}
+        />
+        <g transform={`scale(${zoom * 0.7})`}>
+          {renderInsect(topPiece.type, topPiece.color)}
+        </g>
+        
+        {hasStack && (
+          <g transform={`translate(${15*zoom}, ${-15*zoom})`}>
+            <circle cx="0" cy="0" r={10*zoom} fill="#7c3aed" stroke="#5b21b6" strokeWidth="2"/>
+            <text x="0" y={4*zoom} textAnchor="middle" fill="white" fontSize={10*zoom} fontWeight="bold">
+              {pieces.length}
+            </text>
+          </g>
+        )}
+      </g>
+    );
+  };
+
+  const renderValidMove = (q, r) => {
+    const size = 25 * zoom;
+    const { x, y } = hexToPixel(q, r, size);
+    const existingPieces = getPiecesAtPosition(q, r);
+    const isStackMove = existingPieces.length > 0;
+    
+    if (isStackMove) {
+      return (
+        <g
+          key={`valid-${q},${r}`}
+          transform={`translate(${200 + x + pan.x}, ${200 + y + pan.y})`}
+          onClick={() => handleHexClick(q, r)}
+          style={{ cursor: 'pointer' }}
+        >
+          <polygon
+            points={`${26*zoom},0 ${13*zoom},${22*zoom} ${-13*zoom},${22*zoom} ${-26*zoom},0 ${-13*zoom},${-22*zoom} ${13*zoom},${-22*zoom}`}
+            fill="none"
+            stroke="#06b6d4"
+            strokeWidth="4"
+            opacity={0.8}
+          />
+        </g>
+      );
+    }
+    
+    return (
+      <g
+        key={`valid-${q},${r}`}
+        transform={`translate(${200 + x + pan.x}, ${200 + y + pan.y})`}
+        onClick={() => handleHexClick(q, r)}
+        style={{ cursor: 'pointer' }}
+      >
+        <polygon
+          points={`${22*zoom},0 ${11*zoom},${19*zoom} ${-11*zoom},${19*zoom} ${-22*zoom},0 ${-11*zoom},${-19*zoom} ${11*zoom},${-19*zoom}`}
+          fill="#06b6d4"
+          stroke="#0891b2"
+          strokeWidth="2"
+          opacity={0.6}
+        />
+      </g>
+    );
+  };
+
+  if (showMenu) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-amber-100 flex items-center justify-center p-4">
+        <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 sm:p-8 max-w-md w-full border border-amber-200 shadow-2xl">
+          <div className="flex items-center justify-center mb-6">
+            <Hexagon className="w-12 h-12 sm:w-16 sm:h-16 text-cyan-600" />
+          </div>
+          <h1 className="text-3xl sm:text-4xl font-bold text-center mb-2 text-slate-800">Hive</h1>
+          <p className="text-slate-600 text-center mb-6 text-sm sm:text-base">The award-winning board game</p>
+          
+          <div className="space-y-3">
+            <button
+              onClick={() => { setGameMode('local'); setShowMenu(false); }}
+              className="w-full bg-cyan-600 hover:bg-cyan-700 text-white font-semibold py-3 sm:py-4 px-6 rounded-xl transition-colors flex items-center justify-center gap-3"
+            >
+              <Users className="w-5 h-5" />
+              Local Multiplayer
+            </button>
+            
+            <button
+              onClick={createLiveGame}
+              className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 sm:py-4 px-6 rounded-xl transition-colors flex items-center justify-center gap-3"
+            >
+              <Wifi className="w-5 h-5" />
+              Live Online (Create Game)
+            </button>
+            
+            <button
+              onClick={createAsyncGame}
+              className="w-full bg-amber-600 hover:bg-amber-700 text-white font-semibold py-3 sm:py-4 px-6 rounded-xl transition-colors flex items-center justify-center gap-3"
+            >
+              <Clock className="w-5 h-5" />
+              Async Online (Create Game)
+            </button>
+            
+            <div className="relative">
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder="Enter game code"
+                  value={joinGameId}
+                  onChange={(e) => setJoinGameId(e.target.value.toUpperCase())}
+                  className="flex-1 px-4 py-3 rounded-xl border border-amber-300 focus:outline-none focus:ring-2 focus:ring-amber-500 text-center font-mono text-lg uppercase"
+                  maxLength={6}
+                />
+                <button
+                  onClick={joinLiveGame}
+                  disabled={joinGameId.length < 6}
+                  className="px-4 py-3 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white font-semibold rounded-xl transition-colors"
+                  title="Join Live"
+                >
+                  <Wifi className="w-5 h-5" />
+                </button>
+                <button
+                  onClick={joinAsyncGame}
+                  disabled={joinGameId.length < 6}
+                  className="px-4 py-3 bg-amber-600 hover:bg-amber-700 disabled:bg-gray-400 text-white font-semibold rounded-xl transition-colors"
+                  title="Join Async"
+                >
+                  <Clock className="w-5 h-5" />
+                </button>
+              </div>
+              <p className="text-xs text-slate-500 mt-1 text-center">Enter code, then choose Live or Async</p>
+            </div>
+          </div>
+          
+          <div className="mt-6 space-y-3">
+            <div className="p-3 bg-green-100/50 rounded-lg border border-green-200">
+              <h3 className="font-semibold text-slate-700 mb-1 text-sm flex items-center gap-2">
+                <Wifi className="w-4 h-4 text-green-600" />
+                Live Play
+              </h3>
+              <p className="text-xs text-slate-600">
+                Play in real-time! Game syncs automatically every 2 seconds.
+              </p>
+            </div>
+            
+            <div className="p-3 bg-amber-100/50 rounded-lg border border-amber-200">
+              <h3 className="font-semibold text-slate-700 mb-1 text-sm flex items-center gap-2">
+                <Clock className="w-4 h-4 text-amber-600" />
+                Async Play
+              </h3>
+              <p className="text-xs text-slate-600">
+                Play at your own pace! Notify your opponent when it's their turn.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const currentPieces = gameState.currentPlayer === 'white' ? gameState.whitePieces : gameState.blackPieces;
+  const mustPlaceQueen = gameState.turn === 4 && 
+    ((gameState.currentPlayer === 'white' && !gameState.whiteQueenPlaced) || 
+     (gameState.currentPlayer === 'black' && !gameState.blackQueenPlaced));
+
+  const positionGroups = {};
+  gameState.board.forEach(piece => {
+    const key = `${piece.q},${piece.r}`;
+    if (!positionGroups[key]) {
+      positionGroups[key] = [];
+    }
+    positionGroups[key].push(piece);
+  });
+  
+  Object.values(positionGroups).forEach(group => {
+    group.sort((a, b) => (a.z || 0) - (b.z || 0));
+  });
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-amber-100 flex flex-col">
+      {showShareModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-6 max-w-sm w-full">
+            <h3 className="text-xl font-bold text-slate-800 mb-4">Share Game</h3>
+            
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-slate-600 mb-2">Game Code</label>
+              <div className="flex gap-2">
+                <div className="flex-1 bg-slate-100 rounded-lg px-4 py-3 font-mono text-2xl text-center tracking-widest">
+                  {gameState.gameId}
+                </div>
+                <button
+                  onClick={copyGameLink}
+                  className="px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg transition-colors"
+                >
+                  {copied ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
+                </button>
+              </div>
+            </div>
+            
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowShareModal(false)}
+                className="flex-1 px-4 py-3 bg-slate-200 hover:bg-slate-300 text-slate-800 font-semibold rounded-xl transition-colors"
+              >
+                Start Game
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {gameState.winner && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white/95 backdrop-blur-sm rounded-2xl p-6 border border-amber-300 shadow-2xl max-w-sm w-full">
+            <div className="flex flex-col items-center">
+              <Trophy className="w-12 h-12 text-amber-500 mb-3" />
+              <h2 className="text-2xl font-bold text-slate-800 mb-4">
+                {gameState.winner === 'draw' ? "It's a Draw!" : 
+                 (gameMode === 'async' || gameMode === 'live') ? (gameState.winner === playerColor ? 'You Win!' : 'You Lose!') :
+                 `${gameState.winner === 'white' ? 'White' : 'Black'} Wins!`}
+              </h2>
+              <button
+                onClick={() => { resetGame(); setShowMenu(true); }}
+                className="bg-amber-600 hover:bg-amber-700 text-white font-semibold py-2 px-6 rounded-xl transition-colors"
+              >
+                Play Again
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="bg-white/90 backdrop-blur-sm border-b border-amber-200 p-3 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <button onClick={() => { resetGame(); setShowMenu(true); }} className="p-2 hover:bg-amber-100 rounded-lg">
+            <Menu className="w-5 h-5 text-slate-600" />
+          </button>
+          <div>
+            <div className="flex items-center gap-2">
+              <h2 className="text-lg font-bold text-slate-800">Hive</h2>
+              {gameMode === 'live' && (
+                <span className={`flex items-center gap-1 text-xs px-2 py-0.5 rounded-full ${isConnected ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                  <Wifi className="w-3 h-3" />
+                  {isConnected ? 'Live' : '...'}
+                </span>
+              )}
+              {gameMode === 'async' && (
+                <span className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">
+                  <Clock className="w-3 h-3" />
+                  Async
+                </span>
+              )}
+            </div>
+            {(gameMode === 'async' || gameMode === 'live') && gameState.gameId && (
+              <p className="text-xs text-slate-500">Code: {gameState.gameId}</p>
+            )}
+          </div>
+        </div>
+        
+        <div className="flex items-center gap-2">
+          <button onClick={() => setShowHelp(true)} className="p-2 bg-cyan-100 hover:bg-cyan-200 rounded-lg">
+            <HelpCircle className="w-4 h-4 text-cyan-700" />
+          </button>
+          <button onClick={() => setZoom(z => Math.max(0.5, z - 0.2))} className="p-2 bg-slate-100 hover:bg-slate-200 rounded-lg">
+            <ZoomOut className="w-4 h-4" />
+          </button>
+          <button onClick={() => setZoom(z => Math.min(2, z + 0.2))} className="p-2 bg-slate-100 hover:bg-slate-200 rounded-lg">
+            <ZoomIn className="w-4 h-4" />
+          </button>
+          <button onClick={resetGame} className="p-2 bg-amber-200 hover:bg-amber-300 rounded-lg">
+            <RotateCcw className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+
+      <div className="bg-white/80 px-4 py-2 border-b border-amber-200 flex items-center justify-between flex-wrap gap-2">
+        <div className="flex items-center gap-2">
+          <div className={`w-5 h-5 rounded-full border-2 ${gameState.currentPlayer === 'white' ? 'bg-gray-100 border-gray-300' : 'bg-gray-800 border-gray-600'}`}></div>
+          <span className="text-sm font-semibold text-slate-800">
+            {(gameMode === 'async' || gameMode === 'live') ? (isMyTurn() ? "Your Turn" : "Waiting...") : `${gameState.currentPlayer === 'white' ? 'White' : 'Black'}'s Turn`}
+          </span>
+          <span className="text-xs text-slate-500">Turn {gameState.turn}</span>
+        </div>
+        
+        {pillbugMode && (
+          <div className="flex items-center gap-2">
+            <div className="bg-purple-100 border border-purple-400 text-purple-700 px-2 py-1 rounded-full text-xs font-semibold">
+              {pillbugMode === 'selectPiece' ? '🐛 Select piece' : '🐛 Select dest'}
+            </div>
+            <button onClick={cancelPillbugMode} className="text-xs text-red-600 font-semibold">Cancel</button>
+          </div>
+        )}
+        
+        {gameMode === 'async' && !isMyTurn() && (
+          <button
+            onClick={sendNotification}
+            disabled={notificationSent}
+            className={`flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold ${
+              notificationSent ? 'bg-green-100 text-green-700' : 'bg-cyan-100 text-cyan-700'
+            }`}
+          >
+            {notificationSent ? <Check className="w-3 h-3" /> : <Bell className="w-3 h-3" />}
+            {notificationSent ? 'Sent' : 'Notify'}
+          </button>
+        )}
+        
+        {mustPlaceQueen && (
+          <div className="bg-amber-100 border border-amber-400 text-amber-700 px-2 py-1 rounded-full text-xs font-semibold">
+            Must place Queen!
+          </div>
+        )}
+      </div>
+
+      {showHelp && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl p-4 max-w-lg w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-bold text-slate-800">Piece Guide</h3>
+              <button onClick={() => setShowHelp(false)} className="p-2 hover:bg-slate-100 rounded-lg">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="space-y-3 text-sm">
+              <div className="p-2 bg-amber-50 rounded border border-amber-200">
+                <strong>Queen Bee</strong> - Moves 1 space. Must place by turn 4. If surrounded, you lose!
+              </div>
+              <div className="p-2 bg-slate-50 rounded border border-slate-200">
+                <strong>Beetle</strong> - Moves 1 space. Can climb on top of pieces.
+              </div>
+              <div className="p-2 bg-green-50 rounded border border-green-200">
+                <strong>Grasshopper</strong> - Jumps in straight line over pieces.
+              </div>
+              <div className="p-2 bg-orange-50 rounded border border-orange-200">
+                <strong>Spider</strong> - Moves exactly 3 spaces around hive.
+              </div>
+              <div className="p-2 bg-blue-50 rounded border border-blue-200">
+                <strong>Ant</strong> - Moves any number of spaces around hive.
+              </div>
+              <div className="p-2 bg-gray-50 rounded border border-gray-200">
+                <strong>Mosquito</strong> - Copies movement of adjacent pieces.
+              </div>
+              <div className="p-2 bg-red-50 rounded border border-red-200">
+                <strong>Ladybug</strong> - Moves 2 on top of hive, then 1 down.
+              </div>
+              <div className="p-2 bg-purple-50 rounded border border-purple-200">
+                <strong>Pillbug</strong> - Moves 1 space. Special: grab adjacent piece and move it.
+              </div>
+            </div>
+            
+            <button onClick={() => setShowHelp(false)} className="w-full mt-4 py-2 bg-cyan-600 text-white font-semibold rounded-xl">
+              Got it!
+            </button>
+          </div>
+        </div>
+      )}
+
+      <div 
+        className="flex-1 overflow-hidden touch-none"
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerLeave={handlePointerUp}
+      >
+        <svg ref={svgRef} width="100%" height="100%" viewBox="0 0 400 400" className="bg-amber-50/50" style={{ minHeight: '300px' }}>
+          {validMoves.map(([q, r]) => renderValidMove(q, r))}
+          {Object.entries(positionGroups).map(([key, pieces]) => {
+            const [q, r] = key.split(',').map(Number);
+            return renderStack(q, r, pieces);
+          })}
+        </svg>
+      </div>
+
+      <div className="bg-white/90 backdrop-blur-sm border-t border-amber-200">
+        <button 
+          onClick={() => setShowPieces(!showPieces)}
+          className="w-full flex items-center justify-center gap-2 py-2 text-slate-600 hover:bg-amber-50"
+        >
+          <span className="text-sm font-medium">Available Pieces</span>
+          {showPieces ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
+        </button>
+        
+        {showPieces && (
+          <div className="p-3 pt-0">
+            {gameState.selectedBoardPiece?.type === 'pillbug' && isMyTurn() && !pillbugMode && (
+              <button
+                onClick={() => activatePillbugAbility(gameState.selectedBoardPiece)}
+                className="w-full mb-2 py-2 px-4 bg-purple-500 hover:bg-purple-600 text-white font-semibold rounded-lg text-sm"
+              >
+                🐛 Use Pillbug Special Ability
+              </button>
+            )}
+            
+            <div className="grid grid-cols-8 gap-1">
+              {Object.entries(currentPieces).map(([type, info]) => (
+                <button
+                  key={type}
+                  onClick={() => handlePieceSelect(type)}
+                  disabled={info.count === 0 || (mustPlaceQueen && type !== 'queen') || gameState.winner || !isMyTurn()}
+                  className={`relative aspect-square rounded-lg transition-all flex items-center justify-center ${
+                    gameState.selectedPiece === type ? 'ring-2 ring-amber-500' :
+                    info.count === 0 || (mustPlaceQueen && type !== 'queen') || gameState.winner || !isMyTurn() ? 'opacity-40' : ''
+                  }`}
+                >
+                  <svg width="100%" height="100%" viewBox="-32 -32 64 64">
+                    <polygon
+                      points="28,0 14,24 -14,24 -28,0 -14,-24 14,-24"
+                      fill={gameState.currentPlayer === 'white' ? '#f3f4f6' : '#1f2937'}
+                      stroke={gameState.currentPlayer === 'white' ? '#d1d5db' : '#374151'}
+                      strokeWidth="2"
+                    />
+                    {renderInsect(type, gameState.currentPlayer, 1.0)}
+                  </svg>
+                  <div className="absolute bottom-0 right-0 bg-slate-700 text-white text-xs font-bold rounded px-1">
+                    {info.count}
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<HiveGame />);
+  </script>
+</body>
+</html>
